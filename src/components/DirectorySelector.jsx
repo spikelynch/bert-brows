@@ -1,29 +1,27 @@
 
-import { useRef } from 'react';
+import React, { useState } from 'react';
 
-export function default DirectorySelector() {
-  const fileInputRef = useRef(null);
+const DirectorySelector = () => {
+  const [selectedDirectory, setSelectedDirectory] = useState(null);
 
-  const handleDirectorySelect = () => {
-    fileInputRef.current.directory = true;
-    fileInputRef.current.click();
-  };
-
-  const handleFileSelect = (event) => {
-    const selectedDirectory = event.target.files[0].path;
-    // Do something with the selected directory
-    console.log('Selected directory:', selectedDirectory);
+  const handleDirectoryPick = async () => {
+    try {
+      const directoryHandle = await window.showDirectoryPicker();
+      setSelectedDirectory(directoryHandle);
+    } catch (error) {
+      console.error('Error selecting directory:', error);
+    }
   };
 
   return (
     <div>
-      <button onClick={handleDirectorySelect}>Select Directory</button>
-      <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }}
-        onChange={handleFileSelect}
-      />
+      <button onClick={handleDirectoryPick}>Select Directory</button>
+      {selectedDirectory && (
+        <p>Selected Directory: {selectedDirectory.name}</p>
+      )}
     </div>
   );
-}
+};
+
+export default DirectorySelector;
+
