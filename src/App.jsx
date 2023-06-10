@@ -3,7 +3,12 @@ import { useEffect, useRef, useState } from 'react'
 import DirectorySelector from './components/DirectorySelector';
 import Progress from './components/Progress';
 
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
+
 function App() {
+
 
  // Model loading
   const [ready, setReady] = useState(null);
@@ -80,23 +85,62 @@ function App() {
   });
 
 
-  const index = () => {
-    setDisabled(true);
-    worker.current.postMessage({
-      src_dir: sourceDirectory,
-    });
-  }
+// 
 
+
+const readPdfText = async (pdfBytes) => {
+  const chunks = [];
+  const pdf = await pdfjsLib.getDocument(pdfBytes).promise;
+  for ( let i = 1; i < pdf.numPages; i++ ) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    chunks.push(textContent.items.map((s) => s.str).join(''));
+  }
+  return chunks.join('');
+};
+
+
+
+const loadPDFs = async (directory) => {
+  const texts = [];
+  for await (const entry of directory.values()) {
+    if( entry.name.endsWith(".pdf") ) {
+      const pdf = await entry.getFile();
+      const pdfstr = await pdf.text();
+      const text = await readPdfText({data: pdfstr});
+      console.log("File:", entry.name);
+      console.log("PDF text:", text);
+      texts.push([entry.name, text]);
+    }
+  }
+  return texts;
+};
+
+
+
+
+
+  const index = async () => {
+    setDisabled(true);
+    const texts = await loadPDFs(sourceDir);
+    //worker.current.postMessage({
+      //texts: texts,
+    //});
+  };
+
+  const selectDirectory = (directoryHandle) => {
+    setSourceDir(directoryHandle);
+  };
 
 
   return (
   <>
     <h1>BERT-Brows</h1>
-    <h2>ML-powered semantic document search</h2>
 
     <div className='container'>
       <div className='dirselect-container'>
-        <DirectorySelector onChange={x => setSourceDir(x.target.value)} />
+        <DirectorySelector selectDirectory={selectDirectory} />
+        <p>Source directory is: {sourceDir ? sourceDir.name : ""}</p>
       </div>
 
       <div className='textbox-container'>

@@ -1,9 +1,11 @@
 
 import { pipeline } from '@xenova/transformers';
 
+
+
 class EmbeddingPipeline {
 	static task = 'feature-extraction';
-	static model = 'Xenova/all-MiniLM-L6-v2';
+	static model = 'Xenova/bert-base-uncased';
 	static instance = null;
 
 	static async getInstance(progress_callback = null) {
@@ -17,8 +19,11 @@ class EmbeddingPipeline {
 
 }
 
+
+
 // Listen for messages from the main thread
 self.addEventListener('message', async (event) => {
+  	console.log("Got message in worker:", event.data.src_dir.name);
   // Retrieve the translation pipeline. When called for the first time,
   // this will load the pipeline and save it for future use.
   let indexer = await EmbeddingPipeline.getInstance(x => {
@@ -27,15 +32,16 @@ self.addEventListener('message', async (event) => {
       self.postMessage(x);
   });
 
-  // Actually perform the translation
   let src_dir = event.data.src_dir;
-  console.log("Running indexer...");
-  let output = await indexer('Fix me');
+
+
+  //let outputTensor = await indexer('Fix me');
+  //let outputArray = outputTensor.tolist();
 
   // Send the output back to the main thread
   self.postMessage({
       status: 'complete',
-      output: output,
+      output: "foo",
   });
 });
 
