@@ -12,7 +12,8 @@ function App() {
 
  // Model loading
   const [ready, setReady] = useState(null);
-  const [disabled, setDisabled] = useState(false);
+  const [indexDisabled, setIndexDisabled] = useState(false);
+  const [searchDisabled, setSearchDisabled] = useState(false);
   const [progressItems, setProgressItems] = useState([]);
 
   // Inputs and outputs
@@ -116,20 +117,44 @@ const loadPDFs = async (directory) => {
   return texts;
 };
 
+const loadTextDocs = async (directory) => {
+  const texts = [];
+  for await (const entry of directory.values()) {
+    if( entry.name.endsWith(".txt") ) {
+      const textFile = await entry.getFile();
+      const text = await textFile.text();
+      texts.push([entry.name, text]);
+    }
+  }
+  return texts;
+};
+
 
 
 
 
   const index = async () => {
+    console.log("index");
     setDisabled(true);
-    const texts = await loadPDFs(sourceDir);
+    console.log(`Indexing ${sourceDir}`)
+    const texts = await loadTextDocs(sourceDir);
+    worker.current.postMessage({
+        texts: texts,
+    });
+  };
+
+  const search = async () => {
+    setDisabled(true);
+    //const texts = await loadPDFs(sourceDir);
     //worker.current.postMessage({
       //texts: texts,
     //});
   };
 
+
   const selectDirectory = (directoryHandle) => {
     setSourceDir(directoryHandle);
+    console.log("selectDirectory");
   };
 
 
@@ -141,14 +166,18 @@ const loadPDFs = async (directory) => {
       <div className='dirselect-container'>
         <DirectorySelector selectDirectory={selectDirectory} />
         <p>Source directory is: {sourceDir ? sourceDir.name : ""}</p>
+        <button disabled={indexDisabled} onClick={index}>Index</button>
       </div>
 
-      <div className='textbox-container'>
-        <textarea value={output} rows={3} readOnly></textarea>
+      <div className='search-container'>
+        <button onClick={searchDisabled}>Search</button>
       </div>
+
+
     </div>
 
-    <button disabled={disabled} onClick={index}>Index</button>
+
+
 
     <div className='progress-bars-container'>
       {ready === false && (
