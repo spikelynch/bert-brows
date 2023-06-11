@@ -1,7 +1,7 @@
 
 import { pipeline } from '@xenova/transformers';
 
-const index = {};
+const index = [];
 
 class EmbeddingPipeline {
 	static task = 'embeddings';
@@ -40,11 +40,9 @@ function doSearch(queryEmbedding) {
   const results = [];
   console.log(`search ${queryEmbedding} ${index}`);
   console.log(index);
-  for (const name in index) {
-   console.log(`Searching ${name}`);
-   const csim = calculateCosineSimilarity(queryEmbedding, index[name]["embedding"]);
-   console.log(`cosine sim = ${csim}`);
-   results.push([csim, name]);
+  for (const item of index) {
+   const csim = calculateCosineSimilarity(queryEmbedding, item["embedding"]);
+   results.push([csim, item["text"], item["file"]]);
   }
   results.sort((a, b) => b[0] - a[0]);
   return results.map((r) => r[1]);
@@ -65,12 +63,12 @@ self.addEventListener('message', async (event) => {
   let op = event.data.operation;
   console.log("in worker", event.data);
   if( op === "index" ) {
+    index.length = 0;
     console.log("building index");
     for await ( const text of event.data.texts ) {
-      console.log(text["name"]);
       const name = text["name"];
       const embedding = await indexer(text["text"]);
-      index[name] = { "text": text["text"], "embedding": embedding };
+      index.push({ "file": name, "text": text["text"], "embedding": embedding });
     }
     console.log("done");
     self.postMessage({

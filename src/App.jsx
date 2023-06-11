@@ -7,6 +7,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
 
+const TOKEN_LENGTH = 100;
+
 function App() {
 
 
@@ -111,13 +113,33 @@ const loadPDFs = async (directory) => {
   return texts;
 };
 
+const splitSubstrings = (str, length) => {
+  const words = str.split(' ');
+  const chunks = [];
+
+  for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      if (chunks.length === 0 || chunks[chunks.length - 1].length + word.length + 1 > length) {
+        chunks.push(word);
+      } else {
+        chunks[chunks.length - 1] += ' ' + word;
+      }
+  }
+  return chunks;
+}
+
+
 const loadTextDocs = async (directory) => {
   const texts = [];
   for await (const entry of directory.values()) {
     if( entry.name.endsWith(".txt") ) {
       const textFile = await entry.getFile();
       const text = await textFile.text();
-      texts.push({"name": entry.name, "text": text});
+      const chunks = splitSubstrings(text, TOKEN_LENGTH);
+      for (const chunk of chunks ) {
+        texts.push({"name": entry.name, "text": chunk});
+        console.log(entry.name, chunk);
+      }
     }
   }
   return texts;
