@@ -1,10 +1,10 @@
 
 import { pipeline } from '@xenova/transformers';
 
-
+const index = {};
 
 class EmbeddingPipeline {
-	static task = 'feature-extraction';
+	static task = 'embeddings';
 	static model = 'Xenova/bert-base-uncased';
 	static instance = null;
 
@@ -24,26 +24,30 @@ function calculateCosineSimilarity(queryEmbedding, embedding) {
   let dotProduct = 0;
   let queryMagnitude = 0;
   let embeddingMagnitude = 0;
-  let queryEmbeddingLength = queryEmbedding.length
+  let queryEmbeddingLength = queryEmbedding.data.length;
+  console.log(`embedding length = ${queryEmbeddingLength}`);
   for (let i = 0; i < queryEmbeddingLength; i++) {
-      dotProduct += queryEmbedding[i] * embedding[i];
-      queryMagnitude += queryEmbedding[i] ** 2;
-      embeddingMagnitude += embedding[i] ** 2;
+      dotProduct += queryEmbedding.data[i] * embedding.data[i];
+      queryMagnitude += queryEmbedding.data[i] ** 2;
+      embeddingMagnitude += embedding.data[i] ** 2;
   }
+  console.log(`components ${dotProduct} ${queryMagnitude} ${embeddingMagnitude}`);
   return dotProduct / (Math.sqrt(queryMagnitude) * Math.sqrt(embeddingMagnitude));
 };
 
 
-function doSearch(query, index) {
+function doSearch(queryEmbedding) {
   const results = [];
+  console.log(`search ${queryEmbedding} ${index}`);
+  console.log(index);
   for (const name in index) {
    console.log(`Searching ${name}`);
    const csim = calculateCosineSimilarity(queryEmbedding, index[name]["embedding"]);
    console.log(`cosine sim = ${csim}`);
- //  results.push([0, name, index[name]["text"]);
+   results.push([csim, name]);
   }
-  //results.sort((a, b) => b[0] - a[0]);
-  return results;
+  results.sort((a, b) => b[0] - a[0]);
+  return results.map((r) => r[1]);
 }
 
 
@@ -57,18 +61,10 @@ self.addEventListener('message', async (event) => {
       self.postMessage(x);
   });
 
-  // very naive - store the index in a variable here
-  let index = {};
-
-
-
-
-
 
   let op = event.data.operation;
   console.log("in worker", event.data);
   if( op === "index" ) {
-    index = {};
     console.log("building index");
     for await ( const text of event.data.texts ) {
       console.log(text["name"]);
@@ -86,7 +82,7 @@ self.addEventListener('message', async (event) => {
     console.log(`Query = ${query}`);
     const qembedding = await indexer(query);
     console.log(`Embedding = ${qembedding}`);
-    const matches = doSearch(qembedding, index);
+    const matches = doSearch(qembedding);
     self.postMessage({
       status: 'complete',
       results: matches,
@@ -95,14 +91,4 @@ self.addEventListener('message', async (event) => {
 });
 
 
-
-  // const doSearch = (queryEmbedding) => {
-  //   const results = [];
-  //   for (const name in index) {
-  //     const csim = calculateCosineSimilarity(queryEmbedding, index[name]["embedding"]);
-  //     results.push([csim, name, index[name]["text"]);
-  //   }
-  //   results.sort((a, b) => b[0] - a[0]);
-  //   return Array.slice(results, 0, 3);
-  // };
 
