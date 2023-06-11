@@ -12,13 +12,12 @@ function App() {
 
  // Model loading
   const [ready, setReady] = useState(null);
-  const [indexDisabled, setIndexDisabled] = useState(false);
-  const [searchDisabled, setSearchDisabled] = useState(false);
+  const [indexDisabled, setIndexDisabled] = useState(true);
+  const [searchDisabled, setSearchDisabled] = useState(true);
   const [progressItems, setProgressItems] = useState([]);
-
-  // Inputs and outputs
   const [sourceDir, setSourceDir] = useState(null);
-  const [output, setOutput] = useState('');
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState('');
 
 
   const worker = useRef(null);
@@ -60,18 +59,13 @@ function App() {
 
         case 'ready':
           // Pipeline ready: the worker is ready to accept messages.
-          setReady(true);
-          break;
-
-        case 'update':
-          // Generation update: update the output text.
-          console.log("Got back output", e)
-          setOutput(e.data.output);
+          setSearchDisabled(false);
           break;
 
         case 'complete':
-          // Generation complete: re-enable the "Translate" button
-          setDisabled(false);
+          // Search results are back
+          setResults(e.data.results);
+          setSearchDisabled(false);
           break;
       }
     };
@@ -123,7 +117,7 @@ const loadTextDocs = async (directory) => {
     if( entry.name.endsWith(".txt") ) {
       const textFile = await entry.getFile();
       const text = await textFile.text();
-      texts.push([entry.name, text]);
+      texts.push({"name": entry.name, "text": text});
     }
   }
   return texts;
@@ -134,26 +128,27 @@ const loadTextDocs = async (directory) => {
 
 
   const index = async () => {
-    console.log("index");
-    setDisabled(true);
-    console.log(`Indexing ${sourceDir}`)
+    setIndexDisabled(true);
     const texts = await loadTextDocs(sourceDir);
+    console.log(`Loaded texts: ${texts}`)
     worker.current.postMessage({
+        operation: "index",
         texts: texts,
     });
   };
 
   const search = async () => {
-    setDisabled(true);
-    //const texts = await loadPDFs(sourceDir);
-    //worker.current.postMessage({
-      //texts: texts,
-    //});
+    setSearchDisabled(true);
+    worker.current.postMessage({
+      operation: "search",
+      query: query,
+    });
   };
 
 
   const selectDirectory = (directoryHandle) => {
     setSourceDir(directoryHandle);
+    setIndexDisabled(false);
     console.log("selectDirectory");
   };
 
@@ -170,10 +165,13 @@ const loadTextDocs = async (directory) => {
       </div>
 
       <div className='search-container'>
-        <button onClick={searchDisabled}>Search</button>
+        <input value={query} onChange={e => setQuery(e.target.value)} />
+        <button disabled={searchDisabled} onClick={search}>Search</button>
       </div>
 
-
+     <div className='results-container'>
+        <textarea value={results} rows={3} readOnly></textarea>
+      </div>
     </div>
 
 
