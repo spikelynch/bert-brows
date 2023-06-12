@@ -19,7 +19,7 @@ function App() {
   const [progressItems, setProgressItems] = useState([]);
   const [sourceDir, setSourceDir] = useState(null);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState('');
+  const [results, setResults] = useState([]);
 
 
   const worker = useRef(null);
@@ -60,12 +60,18 @@ function App() {
           break;
 
         case 'ready':
-          // Pipeline ready: the worker is ready to accept messages.
+          console.log("Who sent me a ready message?");
+          break;
+
+        case 'indexed':
+          console.log("Indexing is done");
           setSearchDisabled(false);
           break;
 
+
         case 'complete':
           // Search results are back
+          console.log("results", e.data.results);
           setResults(e.data.results);
           setSearchDisabled(false);
           break;
@@ -192,7 +198,13 @@ const loadTextDocs = async (directory) => {
       </div>
 
      <div className='results-container'>
-        <textarea value={results} rows={3} readOnly></textarea>
+        {results.map(result => (
+          <div className="search-result">
+            <div className="search-text">{result[1]}</div>
+            <div className="search-doc">{result[2]}</div>
+          </div>
+          ))
+        }
       </div>
     </div>
 

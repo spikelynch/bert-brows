@@ -25,27 +25,23 @@ function calculateCosineSimilarity(queryEmbedding, embedding) {
   let queryMagnitude = 0;
   let embeddingMagnitude = 0;
   let queryEmbeddingLength = queryEmbedding.data.length;
-  console.log(`embedding length = ${queryEmbeddingLength}`);
   for (let i = 0; i < queryEmbeddingLength; i++) {
       dotProduct += queryEmbedding.data[i] * embedding.data[i];
       queryMagnitude += queryEmbedding.data[i] ** 2;
       embeddingMagnitude += embedding.data[i] ** 2;
   }
-  console.log(`components ${dotProduct} ${queryMagnitude} ${embeddingMagnitude}`);
   return dotProduct / (Math.sqrt(queryMagnitude) * Math.sqrt(embeddingMagnitude));
 };
 
 
 function doSearch(queryEmbedding) {
   const results = [];
-  console.log(`search ${queryEmbedding} ${index}`);
-  console.log(index);
   for (const item of index) {
    const csim = calculateCosineSimilarity(queryEmbedding, item["embedding"]);
    results.push([csim, item["text"], item["file"]]);
   }
   results.sort((a, b) => b[0] - a[0]);
-  return results.map((r) => r[1]);
+  return results;
 }
 
 
@@ -61,7 +57,6 @@ self.addEventListener('message', async (event) => {
 
 
   let op = event.data.operation;
-  console.log("in worker", event.data);
   if( op === "index" ) {
     index.length = 0;
     console.log("building index");
@@ -72,18 +67,16 @@ self.addEventListener('message', async (event) => {
     }
     console.log("done");
     self.postMessage({
-        status: 'ready',
+        status: 'indexed',
     });
   } else {
-    console.log("Search");
     const query = event.data.query;
-    console.log(`Query = ${query}`);
     const qembedding = await indexer(query);
-    console.log(`Embedding = ${qembedding}`);
     const matches = doSearch(qembedding);
+    console.log(matches.slice(0,5));
     self.postMessage({
       status: 'complete',
-      results: matches,
+      results: matches.slice(0, 5),
     })
   }
 });
