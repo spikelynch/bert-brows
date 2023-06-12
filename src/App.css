@@ -10,12 +10,20 @@
   gap: 20px;
 }
 
-.textbox-container {
+.search-container {
   display: flex;
   justify-content: center;
   gap: 20px;
   width: 800px;
 }
+
+.results-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  width: 800px;
+}
+
 
 .textbox-container>textarea, .language-selector {
   width: 50%;

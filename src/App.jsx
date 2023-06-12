@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import DirectorySelector from './components/DirectorySelector';
 import Progress from './components/Progress';
 
+import './App.css'
+
+
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
