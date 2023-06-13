@@ -36,6 +36,7 @@ function App() {
     }
 
     const onMessageReceived = (e) => {
+      console.log("Message: ", e.data);
       switch (e.data.status) {
         case 'initiate':
         // Model file start load: add a new progress item to the list.

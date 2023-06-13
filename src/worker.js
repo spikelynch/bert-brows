@@ -52,6 +52,8 @@ self.addEventListener('message', async (event) => {
   let indexer = await EmbeddingPipeline.getInstance(x => {
       // We also add a progress callback to the pipeline so that we can
       // track model loading.
+    // the x is  - 
+    //{status: 'progress', progress: 99.88990480095697, loaded: 134294723, total: 134442738, name: 'Xenova/bert-base-uncased', …}
       self.postMessage(x);
   });
 
@@ -59,13 +61,22 @@ self.addEventListener('message', async (event) => {
   let op = event.data.operation;
   if( op === "index" ) {
     index.length = 0;
-    console.log("building index");
+    let n = 0;
+    self.postMessage({name: 'Indexing', status: 'initiate'});
     for await ( const text of event.data.texts ) {
       const name = text["name"];
       const embedding = await indexer(text["text"]);
       index.push({ "file": name, "text": text["text"], "embedding": embedding });
+      n += 1;
+      self.postMessage({
+        name: 'Indexing',
+        status: 'progress',
+        loaded: n,
+        total: event.data.texts.length,
+        progress: 100 * n / event.data.texts.length,
+      })
     }
-    console.log("done");
+    self.postMessage({name: 'Indexing', status: 'done'});
     self.postMessage({
         status: 'indexed',
     });
@@ -73,7 +84,6 @@ self.addEventListener('message', async (event) => {
     const query = event.data.query;
     const qembedding = await indexer(query);
     const matches = doSearch(qembedding);
-    console.log(matches.slice(0,5));
     self.postMessage({
       status: 'complete',
       results: matches.slice(0, 5),
