@@ -13,9 +13,7 @@ const DirectorySelector = ({selectDirectory}) => {
   };
 
   return (
-    <div>
-      <button onClick={handleDirectoryPick}>Select Directory</button>
-    </div>
+    <button onClick={handleDirectoryPick}>Build index</button>
   );
 };
 

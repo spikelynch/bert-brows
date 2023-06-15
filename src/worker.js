@@ -50,10 +50,6 @@ self.addEventListener('message', async (event) => {
   // Retrieve the translation pipeline. When called for the first time,
   // this will load the pipeline and save it for future use.
   let indexer = await EmbeddingPipeline.getInstance(x => {
-      // We also add a progress callback to the pipeline so that we can
-      // track model loading.
-    // the x is  - 
-    //{status: 'progress', progress: 99.88990480095697, loaded: 134294723, total: 134442738, name: 'Xenova/bert-base-uncased', …}
       self.postMessage(x);
   });
 

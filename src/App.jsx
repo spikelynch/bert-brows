@@ -17,7 +17,6 @@ function App() {
 
  // Model loading
   const [ready, setReady] = useState(null);
-  const [indexDisabled, setIndexDisabled] = useState(true);
   const [searchDisabled, setSearchDisabled] = useState(true);
   const [progressItems, setProgressItems] = useState([]);
   const [sourceDir, setSourceDir] = useState(null);
@@ -36,7 +35,6 @@ function App() {
     }
 
     const onMessageReceived = (e) => {
-      console.log("Message: ", e.data);
       switch (e.data.status) {
         case 'initiate':
         // Model file start load: add a new progress item to the list.
@@ -145,7 +143,8 @@ const loadTextDocs = async (directory) => {
     if( entry.name.endsWith(".txt") ) {
       const textFile = await entry.getFile();
       const text = await textFile.text();
-      const chunks = splitSubstrings(text, TOKEN_LENGTH);
+//      const chunks = splitSubstrings(text, TOKEN_LENGTH);
+      const chunks = text.split('.');
       for (const chunk of chunks ) {
         texts.push({"name": entry.name, "text": chunk});
         console.log(entry.name, chunk);
@@ -159,15 +158,14 @@ const loadTextDocs = async (directory) => {
 
 
 
-  const index = async () => {
-    setIndexDisabled(true);
-    const texts = await loadTextDocs(sourceDir);
-    console.log(`Loaded texts: ${texts}`)
-    worker.current.postMessage({
-        operation: "index",
-        texts: texts,
-    });
-  };
+  // const index = async () => {
+  //   const texts = await loadTextDocs(sourceDir);
+  //   console.log(`Loaded texts: ${texts}`)
+  //   worker.current.postMessage({
+  //       operation: "index",
+  //       texts: texts,
+  //   });
+  // };
 
   const search = async () => {
     setSearchDisabled(true);
@@ -178,10 +176,15 @@ const loadTextDocs = async (directory) => {
   };
 
 
-  const selectDirectory = (directoryHandle) => {
-    setSourceDir(directoryHandle);
-    setIndexDisabled(false);
-    console.log("selectDirectory");
+  const selectDirectory = async (directoryHandle) => {
+    // setSourceDir(directoryHandle);
+    // console.log("selectDirectory");
+    const texts = await loadTextDocs(directoryHandle);
+    console.log(`Loaded texts: ${texts}`)
+    worker.current.postMessage({
+        operation: "index",
+        texts: texts,
+    });
   };
 
 
@@ -189,42 +192,39 @@ const loadTextDocs = async (directory) => {
   <>
     <h1>BERT-Brows</h1>
 
+    <p>Select a directory containing *.txt files for in-browser BERT embeddings
+    and search</p>
+
     <div className='container'>
-      <div className='dirselect-container'>
-        <DirectorySelector selectDirectory={selectDirectory} />
-        <p>Source directory is: {sourceDir ? sourceDir.name : ""}</p>
-        <button disabled={indexDisabled} onClick={index}>Index</button>
-      </div>
-
-      <div className='search-container'>
-        <input value={query} onChange={e => setQuery(e.target.value)} />
-        <button disabled={searchDisabled} onClick={search}>Search</button>
-      </div>
-
-     <div className='results-container'>
-        {results.map(result => (
-          <div className="search-result">
-            <div className="search-text">{result[1]}</div>
-            <div className="search-doc">{result[2]}</div>
-          </div>
-          ))
-        }
-      </div>
-    </div>
-
-
-
-
-    <div className='progress-bars-container'>
-      {ready === false && (
-        <label>Loading models... (only run once)</label>
-      )}
-      {progressItems.map(data => (
-        <div key={data.file}>
-          <Progress text={data.file} percentage={data.progress} />
+      <div className='header-container'>
+        <div className='dirselect-container'>
+          <DirectorySelector selectDirectory={selectDirectory} />
+        </div>  
+        <div className='query-container'>
+          <input className='query-input' value={query} onChange={e => setQuery(e.target.value)} />
+          <button disabled={searchDisabled} onClick={search}>Search</button>
         </div>
-      ))}
+      </div>
+
+      <div className='progress-bars-container'>
+        {progressItems.map(data => (
+          <div key={data.file}>
+            <Progress text={data.file} percentage={data.progress} />
+          </div>
+        ))}
+      </div>
+
+      <div className='results-container'>
+        {results.map(result => (
+        <div className="search-result">
+          <div className="search-doc"><p className="search-text">{result[2]}</p></div>
+          <div className="search-result"><p className="search-text">{result[1]}</p></div>
+        </div>
+        ))
+      }
+      </div>
     </div>
+
   </>
 )
 
